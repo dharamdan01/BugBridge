@@ -1,0 +1,51 @@
+{
+  "phase": "12+13",
+  "startedAt": "2026-11-06T06:57:24.088Z",
+  "nodeVersion": "v24.20.0",
+  "suites": [
+    {
+      "name": "api",
+      "passed": 46,
+      "failed": 0,
+      "skipped": 0,
+      "cancelled": 0,
+      "status": "PASS"
+    },
+    {
+      "name": "investigation",
+      "passed": 15,
+      "failed": 0,
+      "skipped": 0,
+      "cancelled": 0,
+      "status": "PASS"
+    },
+    {
+      "name": "switch-bridge-including-triage-approval-and-local-e2e",
+      "passed": 140,
+      "failed": 1,
+      "skipped": 0,
+      "cancelled": 0,
+      "status": "FAILED_OR_BLOCKED",
+      "failureCodes": [
+        "EBUSY"
+      ],
+      "failedTestNumbers": [
+        108
+      ]
+    }
+  ],
+  "checks": [],
+  "liveMattermostVerifiedThisRun": false,
+  "realCodexInvokedThisRun": false,
+  "productionEnrollmentPerformed": false,
+  "patchExecutionEnabled": false,
+  "submissionApproved": false,
+  "status": "FAILED_OR_BLOCKED",
+  "finishedAt": "2026-11-06T06:57:40.943Z",
+  "totals": {
+    "passed": 201,
+    "failed": 1,
+    "skipped": 0,
+    "cancelled": 0
+  }
+}

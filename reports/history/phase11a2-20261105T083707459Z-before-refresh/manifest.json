@@ -1,0 +1,37 @@
+﻿{
+    "schemaVersion":  1,
+    "archivedAt":  "2026-11-05T08:37:07.5731634Z",
+    "reason":  "Phase 11A.2 preserves all existing evidence and proposals before refreshing current evidence",
+    "files":  [
+                  {
+                      "originalPath":  "reports/phase9-bug-evidence.json",
+                      "archivedPath":  "reports/phase9-bug-evidence.json",
+                      "sha256":  "ee3ac97ab0359fc3674d8d918befbf7a0dafde22dd050f72096d7f0aea47bf89"
+                  },
+                  {
+                      "originalPath":  "reports/phase9-bug-evidence.md",
+                      "archivedPath":  "reports/phase9-bug-evidence.md",
+                      "sha256":  "d76e00e2b2c8de109d0b42f28fd1875a1177c01e1b6a5316f53522a0bc0fccb3"
+                  },
+                  {
+                      "originalPath":  "reports/incidents/INC-001-triage.json",
+                      "archivedPath":  "reports/incidents/INC-001-triage.json",
+                      "sha256":  "48776235c3ac99e5f17e9797d50506776d0fedbcd147375bb1b5074e86874cb7"
+                  },
+                  {
+                      "originalPath":  "reports/incidents/INC-001-triage.md",
+                      "archivedPath":  "reports/incidents/INC-001-triage.md",
+                      "sha256":  "70cd71fa67969b91eee7b1f2a906d9f14f93bc3e62d96d059326df75afe842e3"
+                  },
+                  {
+                      "originalPath":  "reports/phase11/phase9-bug-evidence.json",
+                      "archivedPath":  "reports/phase11/phase9-bug-evidence.json",
+                      "sha256":  "e41fde53f3fe11ffea7ab24d5dc6adc7ec3d66658fe283e9d9207a423ee722ef"
+                  },
+                  {
+                      "originalPath":  "reports/phase11/phase9-bug-evidence.md",
+                      "archivedPath":  "reports/phase11/phase9-bug-evidence.md",
+                      "sha256":  "55c52964dfeb4fea799db3fd8cf6cdea35d335c3c4522864a4bbef18abb2e484"
+                  }
+              ]
+}

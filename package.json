@@ -1,0 +1,30 @@
+{
+  "name": "bugbridge-api",
+  "version": "0.1.0",
+  "private": true,
+  "description": "In-memory task API and controlled debugging scenario for BugBridge",
+  "type": "module",
+  "engines": { "node": ">=22" },
+  "dependencies": { "express": "^5.3.0" },
+  "scripts": {
+    "dev": "node --watch src/server.js",
+    "start": "node src/server.js",
+    "test": "node --test tests/tasks.test.js",
+    "test:bug": "node --test tests/regression/empty-body.test.js",
+    "reproduce:bug": "node scripts/reproduce-bug.mjs",
+    "test:investigation": "node --test tests/investigation/*.test.mjs",
+    "test:phase7": "npm --prefix switch-bridge test",
+    "test:phase10": "node --test switch-bridge/test/phase10-*.test.mjs",
+    "test:phase11": "node --test switch-bridge/test/phase11-*.test.mjs",
+    "test:enrollment": "node --test tests/enrollment/*.test.mjs",
+    "test:approval-setup": "node --test tests/approval-setup/*.test.mjs",
+    "test:submission": "node --test tests/submission/*.test.mjs",
+    "test:local-e2e": "node --test switch-bridge/test/phase12-local-workflow.test.mjs",
+    "security:submission": "node scripts/check-submission.mjs",
+    "verify:local": "node scripts/verify-local-demo.mjs",
+    "approval:local": "node scripts/approval-local.mjs",
+    "reproduce:phase11": "node scripts/verify-phase11-bug.mjs",
+    "triage:incident": "node scripts/triage-incident.mjs INC-001",
+    "smoke": "node scripts/smoke-test.js"
+  }
+}

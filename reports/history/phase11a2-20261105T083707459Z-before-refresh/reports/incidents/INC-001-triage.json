@@ -1,0 +1,265 @@
+{
+  "incidentId": "INC-001",
+  "title": "Empty task creation causes HTTP 500",
+  "status": "AWAITING_APPROVAL",
+  "severity": {
+    "basis": "AI_ANALYSIS",
+    "level": "MODERATE",
+    "rationale": "Both invalid requests returned server errors, but valid creation succeeded, health recovered and storage was unchanged. Broader production impact is unknown."
+  },
+  "problem": "Empty task creation is misclassified as a server failure.",
+  "expectedBehavior": {
+    "basis": "API_CONTRACT",
+    "status": 400,
+    "code": "VALIDATION_ERROR"
+  },
+  "observedBehavior": {
+    "basis": "MEASURED_HTTP",
+    "status": 500,
+    "code": "INTERNAL_ERROR",
+    "validCreationStatus": 201
+  },
+  "reproductionEvidence": {
+    "basis": "MEASURED_HTTP",
+    "file": "reports/phase9-bug-evidence.json",
+    "sha256": "bd1290e56930d3ffd4a26d4ffad9d5ceba82dacb2e648b0946cf82187396b3cf",
+    "reproducedAt": "2026-11-05T07:28:20.971Z",
+    "scenarios": [
+      {
+        "id": "empty-json",
+        "method": "POST",
+        "route": "/api/tasks",
+        "bodyBytes": 2,
+        "expectedStatus": 400,
+        "expectedCode": "VALIDATION_ERROR",
+        "observedStatus": 500,
+        "observedCode": "INTERNAL_ERROR",
+        "observedMessage": "Internal server error."
+      },
+      {
+        "id": "empty-body",
+        "method": "POST",
+        "route": "/api/tasks",
+        "bodyBytes": 0,
+        "expectedStatus": 400,
+        "expectedCode": "VALIDATION_ERROR",
+        "observedStatus": 500,
+        "observedCode": "INTERNAL_ERROR",
+        "observedMessage": "Internal server error."
+      }
+    ],
+    "storageUnchangedAfterInvalidRequests": true,
+    "healthyAfterErrors": true,
+    "temporaryServerClosed": true
+  },
+  "rootCause": {
+    "basis": "AI_ANALYSIS",
+    "analyst": "CODEX_CLI",
+    "explanation": "The create controller throws a generic Error for undefined bodies and empty objects before validateTaskInput. Express forwards it to errorHandler, which maps non-HttpError exceptions to 500 INTERNAL_ERROR. The existing validator would reject both inputs with 400 VALIDATION_ERROR.",
+    "assessment": {
+      "incidentId": "INC-001",
+      "mechanism": "GENERIC_ERROR_BEFORE_VALIDATION",
+      "fix": "REMOVE_EMPTY_INPUT_THROW_AND_UNUSED_IMPORT",
+      "evidenceRefs": [
+        "empty-json",
+        "empty-body",
+        "controller-throw",
+        "controller-validation",
+        "validator-400",
+        "handler-500"
+      ],
+      "verification": [
+        "EMPTY_INPUT_400",
+        "VALID_CREATE_201",
+        "NO_INSERT_ON_REJECTION",
+        "PRESERVE_ERROR_SANITIZATION",
+        "ALL_SUITES_AFTER_APPROVAL"
+      ]
+    }
+  },
+  "supportingFiles": [
+    {
+      "file": "src/app.js",
+      "sha256": "760540c467b8f7eed43a489d6bf9d23fde040ddecc93d03a8cd60e7a30649794",
+      "excerpts": [
+        {
+          "line": 17,
+          "text": "app.use(express.json({ limit: \"16kb\", strict: false }));"
+        },
+        {
+          "line": 20,
+          "text": "app.use(\"/api/tasks\", createTasksRouter(createTasksService()));"
+        }
+      ]
+    },
+    {
+      "file": "src/routes/tasks.routes.js",
+      "sha256": "0971361116e90bcff6674ca0b1c1c5b7f8234c85f544bf66c1d360f7cdff7aad",
+      "excerpts": [
+        {
+          "line": 9,
+          "text": "router.route(\"/\").get(controller.list).post(controller.create);"
+        }
+      ]
+    },
+    {
+      "file": "src/controllers/tasks.controller.js",
+      "sha256": "4cafbf10e6cf55738c0687b3f2ed8d1f443ec7d039115d8ae6abe2da79ff3432",
+      "excerpts": [
+        {
+          "line": 1,
+          "text": "import { isObject, validateTaskInput } from \"../validation/tasks.validation.js\";"
+        },
+        {
+          "line": 12,
+          "text": "if (req.body === undefined || (isObject(req.body) && Object.keys(req.body).length === 0)) {"
+        },
+        {
+          "line": 16,
+          "text": "throw new Error(\"BUG-001: empty task body bypasses validation\");"
+        },
+        {
+          "line": 18,
+          "text": "const task = service.create(validateTaskInput(req.body));"
+        }
+      ]
+    },
+    {
+      "file": "src/validation/tasks.validation.js",
+      "sha256": "175ba0c9ce4506aec979a4fc998ae4657f9ad079bb199485136b93eb6cb31bdd",
+      "excerpts": [
+        {
+          "line": 9,
+          "text": "if (!isObject(body)) {"
+        },
+        {
+          "line": 10,
+          "text": "throw new HttpError(400, \"VALIDATION_ERROR\", \"Invalid task input.\", ["
+        },
+        {
+          "line": 22,
+          "text": "(typeof body.title !== \"string\" || body.title.trim().length === 0 || body.title.trim().length > 200)) {"
+        },
+        {
+          "line": 31,
+          "text": "if (details.length) throw new HttpError(400, \"VALIDATION_ERROR\", \"Invalid task input.\", details);"
+        }
+      ]
+    },
+    {
+      "file": "src/middleware/error-handler.js",
+      "sha256": "9c11519be5d3f841efdc91b40a2d06412f501f890765ddf564356ba91b96fea8",
+      "excerpts": [
+        {
+          "line": 27,
+          "text": "const known = failure instanceof HttpError;"
+        },
+        {
+          "line": 28,
+          "text": "res.status(known ? failure.status : 500).json({"
+        },
+        {
+          "line": 31,
+          "text": "code: known ? failure.code : \"INTERNAL_ERROR\","
+        },
+        {
+          "line": 32,
+          "text": "message: known ? failure.message : \"Internal server error.\","
+        }
+      ]
+    },
+    {
+      "file": "src/services/tasks.service.js",
+      "sha256": "2490414b1e4eca70d1a2e166b57864329fa4843d7c16a976bb85d315012e960d",
+      "excerpts": [
+        {
+          "line": 5,
+          "text": "const tasks = new Map();"
+        },
+        {
+          "line": 21,
+          "text": "tasks.set(task.id, task);"
+        }
+      ]
+    },
+    {
+      "file": "tests/regression/empty-body.test.js",
+      "sha256": "01c20aeeec26a5110f9dda095640f2902f8496e2e6186973ef5175c75bcd4f88",
+      "excerpts": [
+        {
+          "line": 10,
+          "text": "test(\"BUG-001: empty task creation should return 400 VALIDATION_ERROR, not 500\", async t => {"
+        },
+        {
+          "line": 21,
+          "text": "assert.deepEqual(actual, bug.requests.map(variant => ({ variant: variant.label, ...bug.expected })));"
+        }
+      ]
+    },
+    {
+      "file": "tests/tasks.test.js",
+      "sha256": "7652cd14ad164a8d63fc713cdcecc410e35d289e85a3956e3f66f15d74fc2dbc",
+      "excerpts": [
+        {
+          "line": 37,
+          "text": "test(\"create sets defaults, UUID, timestamps and Location header\", async t => {"
+        },
+        {
+          "line": 40,
+          "text": "assert.equal(result.status, 201);"
+        }
+      ]
+    },
+    {
+      "file": "tests/investigation/reproduce-bug.test.mjs",
+      "sha256": "c75f9d2c1f4ae812ce8d5896fa11b3d75c59d06e0b4f5509da3f8620dff9bda1",
+      "excerpts": [
+        {
+          "line": 34,
+          "text": "test(`${id} preserves and reproduces the known HTTP 500 bug`, () => {"
+        },
+        {
+          "line": 37,
+          "text": "assert.equal(scenario.observed.status, 500);"
+        }
+      ]
+    },
+    {
+      "file": "scripts/reproduce-bug.mjs",
+      "sha256": "71ec7fcd81f0beee97cc5dcf09fa2b16690bfb701a1883bfcd74107e96095c7e",
+      "excerpts": [
+        {
+          "line": 93,
+          "text": "export async function collectEvidence({ app } = {}) {"
+        },
+        {
+          "line": 114,
+          "text": "const expected = { status: 400, errorCode: \"VALIDATION_ERROR\" };"
+        }
+      ]
+    }
+  ],
+  "proposedFix": {
+    "basis": "AI_ANALYSIS",
+    "file": "src/controllers/tasks.controller.js",
+    "description": "After separate human approval, remove the intentional empty-input throw branch from create and remove its unused isObject import. Keep validateTaskInput and generic-error sanitization unchanged.",
+    "applied": false
+  },
+  "riskAssessment": {
+    "basis": "AI_ANALYSIS",
+    "risks": [
+      "Small change to the create validation path; regression risk includes accidentally changing valid creation or generic-error sanitization.",
+      "Measured scope is two synthetic requests in a fresh in-memory instance. Production frequency, users affected, retry traffic and business loss were not measured.",
+      "No runtime stack trace was collected. Root cause is source-supported analysis, not a measured stack trace. Proposed behavior has not been applied or tested."
+    ]
+  },
+  "verificationPlan": [
+    "After approval: npm run test:bug must pass unchanged; both empty JSON and absent bodies must return 400 VALIDATION_ERROR with no inserted task.",
+    "After approval: npm test must pass; valid creation must remain 201 with defaults and Location; other validation and error sanitization must remain intact.",
+    "After approval: npm run smoke must pass after its preserved-500 expectation is explicitly reviewed and updated for the approved fixed state.",
+    "After approval: review and update the preserved-bug acceptance policy in npm run reproduce:bug, npm run test:investigation and Phase 10 incident acceptance tests; record new real HTTP evidence.",
+    "After approval: npm run test:phase7, npm run test:phase10 and JavaScript syntax checks must pass; manually verify existing PING, ASK and triage in the same Mattermost room."
+  ],
+  "approvalRequired": true,
+  "generatedAt": "2026-11-05T07:47:30.458Z"
+}

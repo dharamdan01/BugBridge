@@ -1,0 +1,26 @@
+{
+  "phase": 14,
+  "checkedAt": "2026-11-06T07:48:32.483Z",
+  "host": "127.0.0.1",
+  "apiPort": 3100,
+  "gatewayModified": false,
+  "sourceModified": false,
+  "cases": [
+    {
+      "id": "empty-json",
+      "expectedStatus": 400,
+      "observedStatus": 500,
+      "errorCode": "INTERNAL_ERROR"
+    },
+    {
+      "id": "empty-body",
+      "expectedStatus": 400,
+      "observedStatus": 500,
+      "errorCode": "INTERNAL_ERROR"
+    }
+  ],
+  "childExited": true,
+  "status": "VERIFIED_ACTUAL_DEMO_PORT",
+  "healthStatus": 200,
+  "validCreationStatus": 201
+}

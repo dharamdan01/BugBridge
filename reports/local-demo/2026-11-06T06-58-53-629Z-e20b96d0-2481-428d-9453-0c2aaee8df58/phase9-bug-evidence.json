@@ -1,0 +1,183 @@
+{
+  "schemaVersion": 1,
+  "incidentId": "INC-001",
+  "bugId": "BUG-001",
+  "title": "Empty task creation causes HTTP 500",
+  "status": "OPEN / UNFIXED",
+  "reproducedAt": "2026-11-06T07:00:14.694Z",
+  "verifiedObservations": {
+    "method": "POST",
+    "route": "/api/tasks",
+    "transport": "Real HTTP via built-in Node.js fetch; 127.0.0.1 on an ephemeral port",
+    "storage": "Fresh createApp() instance with private in-memory task storage",
+    "baseline": {
+      "request": {
+        "method": "POST",
+        "headers": {
+          "Content-Type": "application/json"
+        },
+        "body": {
+          "title": "Phase 9 isolated reproduction baseline"
+        },
+        "route": "/api/tasks"
+      },
+      "expected": {
+        "status": 201
+      },
+      "observed": {
+        "status": 201,
+        "jsonContentType": true,
+        "success": true,
+        "task": {
+          "id": "a2e67171-8860-4046-a212-3691019dfd83",
+          "title": "Phase 9 isolated reproduction baseline",
+          "description": "",
+          "status": "todo",
+          "createdAt": "2026-11-06T07:00:14.724Z",
+          "updatedAt": "2026-11-06T07:00:14.724Z"
+        },
+        "locationMatchesTask": true
+      },
+      "passed": true
+    },
+    "scenarios": [
+      {
+        "id": "empty-json",
+        "label": "Empty JSON object",
+        "request": {
+          "method": "POST",
+          "route": "/api/tasks",
+          "headers": {
+            "Content-Type": "application/json"
+          },
+          "body": {},
+          "bodyBytes": 2
+        },
+        "expected": {
+          "status": 400,
+          "errorCode": "VALIDATION_ERROR"
+        },
+        "observed": {
+          "status": 500,
+          "jsonContentType": true,
+          "success": false,
+          "error": {
+            "code": "INTERNAL_ERROR",
+            "message": "Internal server error.",
+            "detailsCount": 0
+          }
+        },
+        "matchesExpected": false,
+        "classification": "KNOWN_BUG_REPRODUCED"
+      },
+      {
+        "id": "empty-body",
+        "label": "Absent request body (zero bytes)",
+        "request": {
+          "method": "POST",
+          "route": "/api/tasks",
+          "headers": {},
+          "body": null,
+          "bodyBytes": 0
+        },
+        "expected": {
+          "status": 400,
+          "errorCode": "VALIDATION_ERROR"
+        },
+        "observed": {
+          "status": 500,
+          "jsonContentType": true,
+          "success": false,
+          "error": {
+            "code": "INTERNAL_ERROR",
+            "message": "Internal server error.",
+            "detailsCount": 0
+          }
+        },
+        "matchesExpected": false,
+        "classification": "KNOWN_BUG_REPRODUCED"
+      }
+    ],
+    "storageUnchangedAfterInvalidRequests": true,
+    "healthyAfterErrors": true,
+    "temporaryServerClosed": true
+  },
+  "reproductionSteps": [
+    "Run npm run reproduce:bug from the project root.",
+    "Start a fresh createApp() on 127.0.0.1 port 0; the OS assigns a free port.",
+    "POST /api/tasks with the fixed valid title; verify 201 and the created task.",
+    "POST /api/tasks with Content-Type application/json and the literal body {}.",
+    "POST /api/tasks without a body or Content-Type header (zero bytes).",
+    "Compare both actual statuses and sanitized errors with 400 VALIDATION_ERROR and the known 500 INTERNAL_ERROR signature.",
+    "Verify only the control task remains, check health, then close the temporary server."
+  ],
+  "analysis": {
+    "basis": "Source inspection, supported by the verified HTTP observations; no runtime stack trace was collected.",
+    "sourceLocations": [
+      {
+        "file": "src/app.js",
+        "symbol": "createApp",
+        "relevance": "JSON parsing, isolated service and /api/tasks mount"
+      },
+      {
+        "file": "src/routes/tasks.routes.js",
+        "symbol": "createTasksRouter",
+        "relevance": "POST / dispatches to controller.create"
+      },
+      {
+        "file": "src/controllers/tasks.controller.js",
+        "symbol": "create",
+        "lines": [
+          12,
+          16,
+          18
+        ],
+        "relevance": "Empty inputs throw a generic Error before validateTaskInput"
+      },
+      {
+        "file": "src/validation/tasks.validation.js",
+        "symbol": "validateTaskInput",
+        "relevance": "Undefined body and missing title already produce HttpError(400, VALIDATION_ERROR)"
+      },
+      {
+        "file": "src/middleware/error-handler.js",
+        "symbol": "errorHandler",
+        "lines": [
+          27,
+          28,
+          31,
+          32
+        ],
+        "relevance": "Non-HttpError exceptions map to sanitized 500 INTERNAL_ERROR"
+      },
+      {
+        "file": "src/services/tasks.service.js",
+        "symbol": "createTasksService",
+        "relevance": "Private Map per application instance"
+      },
+      {
+        "file": "fixtures/bug-reports.json",
+        "symbol": "BUG-001",
+        "relevance": "Existing expected contract; fixture actual values were not used as HTTP evidence"
+      },
+      {
+        "file": "tests/regression/empty-body.test.js",
+        "symbol": "BUG-001 regression",
+        "relevance": "Asserts correct 400 behavior for both scenarios"
+      }
+    ],
+    "rootCause": "The create controller explicitly throws a generic Error for undefined bodies and empty objects before calling validateTaskInput. Express forwards this to errorHandler, which maps non-HttpError exceptions to HTTP 500 INTERNAL_ERROR. The existing validator would reject both inputs with HTTP 400 VALIDATION_ERROR."
+  },
+  "recommendations": {
+    "suggestedMinimalFix": "After human approval, remove the intentional empty-input throw branch in controller.create and let validateTaskInput handle both cases. Remove the unused isObject import if it is no longer referenced. Preserve generic-error sanitization in errorHandler.",
+    "verificationRequirements": [
+      "Both empty input scenarios must return 400 VALIDATION_ERROR after an approved fix.",
+      "The unchanged separate npm run test:bug regression must then pass.",
+      "Valid creation must remain 201; rejected requests must not create tasks.",
+      "Normal API, Switch bridge and smoke suites must pass.",
+      "Update the investigation acceptance policy only in the approved fixing phase: it currently requires the preserved bug."
+    ],
+    "approval": "Investigation only. No automatic patching; any future edit requires explicit human approval."
+  },
+  "outcome": "PASSED"
+}

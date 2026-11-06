@@ -1,0 +1,16 @@
+[
+  {
+    "id": "BUG-001",
+    "title": "Creating a task with an empty request body returns HTTP 500",
+    "method": "POST",
+    "path": "/api/tasks",
+    "requests": [
+      { "label": "empty JSON object", "json": {} },
+      { "label": "absent request body" }
+    ],
+    "expected": { "status": 400, "errorCode": "VALIDATION_ERROR" },
+    "actual": { "status": 500, "errorCode": "INTERNAL_ERROR" },
+    "reproduce": "npm run test:bug",
+    "state": "intentionally preserved for AI-assisted investigation"
+  }
+]

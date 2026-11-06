@@ -1,0 +1,148 @@
+{
+  "phase": "12+13",
+  "startedAt": "2026-11-06T06:58:53.624Z",
+  "nodeVersion": "v24.20.0",
+  "suites": [
+    {
+      "name": "api",
+      "passed": 46,
+      "failed": 0,
+      "skipped": 0,
+      "cancelled": 0,
+      "status": "PASS"
+    },
+    {
+      "name": "investigation",
+      "passed": 15,
+      "failed": 0,
+      "skipped": 0,
+      "cancelled": 0,
+      "status": "PASS"
+    },
+    {
+      "name": "switch-bridge-including-triage-approval-and-local-e2e",
+      "passed": 141,
+      "failed": 0,
+      "skipped": 0,
+      "cancelled": 0,
+      "status": "PASS"
+    },
+    {
+      "name": "approval-setup-including-native-ACL",
+      "passed": 64,
+      "failed": 0,
+      "skipped": 1,
+      "cancelled": 0,
+      "status": "PASS"
+    },
+    {
+      "name": "enrollment-fixtures",
+      "passed": 23,
+      "failed": 0,
+      "skipped": 0,
+      "cancelled": 0,
+      "status": "PASS"
+    },
+    {
+      "name": "submission-scan",
+      "passed": 9,
+      "failed": 0,
+      "skipped": 0,
+      "cancelled": 0,
+      "status": "PASS"
+    }
+  ],
+  "checks": [
+    {
+      "name": "javascript-syntax",
+      "status": "PASS",
+      "files": 60
+    },
+    {
+      "name": "real-entrypoint-health-CRUD-error-recovery-smoke",
+      "status": "PASS"
+    }
+  ],
+  "liveMattermostVerifiedThisRun": false,
+  "realCodexInvokedThisRun": false,
+  "productionEnrollmentPerformed": false,
+  "patchExecutionEnabled": false,
+  "submissionApproved": false,
+  "httpEvidence": {
+    "file": "reports/local-demo/2026-11-06T06-58-53-629Z-e20b96d0-2481-428d-9453-0c2aaee8df58/phase9-bug-evidence.json",
+    "baselineStatus": 201,
+    "cases": [
+      {
+        "id": "empty-json",
+        "expected": 400,
+        "observed": 500
+      },
+      {
+        "id": "empty-body",
+        "expected": 400,
+        "observed": 500
+      }
+    ],
+    "temporaryServerClosed": true
+  },
+  "intentionalRegression": {
+    "status": "EXPECTED_FAILURE",
+    "failed": 1,
+    "reason": "Both empty variants return 500 INTERNAL_ERROR instead of 400 VALIDATION_ERROR; confirmed by independent real HTTP evidence"
+  },
+  "readiness": {
+    "proposalIntegrity": "PASS",
+    "patchExecutionEnabled": false,
+    "executionEntryPointRefused": true,
+    "enrollmentConfiguration": "ABSENT",
+    "authorizedHumanIdentity": "PENDING",
+    "switchIdentity": "UNVERIFIED",
+    "liveApprovalTested": false,
+    "scope": "EVIDENCE_AND_DISABLED_EXECUTION_ONLY",
+    "incidentId": "INC-001",
+    "status": "AWAITING_APPROVAL",
+    "proposalDigest": "d76139dcefee19a1c08d7525c1861c0b3469064df07504570f765f9f33d78284",
+    "evidenceDigest": "d59a2148dd6075e0aeee7696488a87078d16fb27e839463c6576c0b5ef029ee7",
+    "reproducedAt": "2026-11-05T08:37:21.111Z",
+    "generatedAt": "2026-11-05T08:37:46.936Z",
+    "analysisOrigin": "LOCAL_SOURCE_REVIEW",
+    "sourceFilesVerified": 10
+  },
+  "historicalEvidenceAndSourceUnchanged": true,
+  "submissionScan": {
+    "mode": "READ_ONLY_RELEASE_SURFACE",
+    "scannedFiles": 101,
+    "excludedEntries": 10,
+    "findings": [],
+    "personalData": [
+      {
+        "file": "docs/phase11-final-security-audit.md",
+        "category": "PERSONAL_OR_PARTICIPANT_REFERENCE_REVIEW"
+      },
+      {
+        "file": "docs/phase11-identity-mapping.md",
+        "category": "PERSONAL_OR_PARTICIPANT_REFERENCE_REVIEW"
+      },
+      {
+        "file": "docs/phase11-verification.md",
+        "category": "PERSONAL_OR_PARTICIPANT_REFERENCE_REVIEW"
+      },
+      {
+        "file": "docs/phase8-verification.md",
+        "category": "PERSONAL_OR_PARTICIPANT_REFERENCE_REVIEW"
+      }
+    ],
+    "gitHistory": "UNAVAILABLE_NO_GIT_METADATA",
+    "status": "NO_DETECTED_SECRET_PATTERNS",
+    "submissionApproved": false,
+    "limitations": "Heuristic current-file scan, not proof of absence. Excluded files were not opened. Git index/history, binary captures and third-party dependencies require separate review."
+  },
+  "status": "LOCAL_AUTOMATED_CHECKS_PASSED_MANUAL_LIVE_CHECKS_PENDING",
+  "finishedAt": "2026-11-06T07:00:15.183Z",
+  "totals": {
+    "passed": 298,
+    "failed": 0,
+    "skipped": 1,
+    "cancelled": 0
+  }
+}

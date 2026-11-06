@@ -1,0 +1,32 @@
+{
+  "artifactType": "SANITIZED_DOCUMENTATION_SAMPLE",
+  "notice": "Derived from the inspected synthetic INC-001 evidence and proposal. This sample is not a new test run, live chat transcript, approval record or runtime proposal. It must not replace the integrity-bound reports used by tests and triage.",
+  "incidentId": "INC-001",
+  "title": "Empty task creation returns HTTP 500",
+  "status": "AWAITING_APPROVAL",
+  "evidence": {
+    "source": "reports/phase9-bug-evidence.json",
+    "scope": "Synthetic requests against an isolated in-memory API",
+    "method": "POST",
+    "route": "/api/tasks",
+    "validControlStatus": 201,
+    "scenarios": [
+      { "input": "empty JSON object", "expectedStatus": 400, "observedStatus": 500 },
+      { "input": "absent request body", "expectedStatus": 400, "observedStatus": 500 }
+    ],
+    "storageUnchangedAfterInvalidRequests": true,
+    "healthyAfterErrors": true
+  },
+  "analysis": {
+    "basis": "Source-supported summary of the inspected proposal",
+    "mechanism": "The controller throws a generic Error before validation; the error handler maps it to HTTP 500.",
+    "proposedChange": "After separate authorization, remove the intentional empty-input throw and unused import, preserving validation and generic-error sanitization."
+  },
+  "reviewBoundary": {
+    "humanApprovalRequired": true,
+    "fixApplied": false,
+    "patchExecutionEnabled": false
+  },
+  "liveSwitchMattermostDelivery": "NOT_ATTESTED_BY_THIS_SAMPLE",
+  "omitted": "Credentials, participant/account IDs, private messages, host paths, task IDs, execution timestamps, approval challenges, signatures and private storage."
+}

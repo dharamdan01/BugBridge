@@ -1,0 +1,18 @@
+{
+  "name": "switch-bridge",
+  "version": "1.0.0",
+  "description": "",
+  "main": "index.js",
+  "scripts": {
+    "start": "node agent-runtime.mjs",
+    "test": "node --test test/*.test.mjs",
+    "check": "node --check agent-runtime.mjs && node --check message-handler.mjs && node --check switch-client.mjs && node --check codex-runner.mjs && node --check check-connection.mjs && node --check incident-triage.mjs && node --check incident-files.mjs && node --check triage-contract.mjs && node --check schema-validator.mjs && node --check approval-service.mjs && node --check approval-protocol.mjs && node --check approval-store.mjs && node --check approval-files.mjs && node --check fix-plan.mjs"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "type": "commonjs",
+  "dependencies": {
+    "ws": "^8.22.1"
+  }
+}
