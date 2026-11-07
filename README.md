@@ -1,125 +1,116 @@
 # BugBridge
 
-BugBridge investigates a reproducible API incident from Mattermost through Switch and returns a Codex-assisted proposal for human review.
+**Investigate a reproducible API bug from team chat, with evidence and a fix proposal ready for review.**
 
-## The problem
+BugBridge connects a Mattermost incident room to a Node.js agent through Switch. The agent uses Codex to inspect a known issue, compare the recorded HTTP behavior with the expected result, and return a source-backed proposal to the same conversation. The proposal is saved as JSON and Markdown for human review.
 
-A bug report is difficult to act on when the request, observed response and relevant code are scattered across a chat thread. A useful handoff needs reproducible evidence, an explanation supported by the source, and a proposed change that someone can review.
-
-BugBridge keeps that handoff in the incident conversation. The included case is deliberately small: an Express API returns the wrong HTTP status for an empty task-creation request.
-
-## What BugBridge does
-
-- Reproduces the HTTP error using synthetic requests, with a valid control request and storage/health checks.
-- Receives explicit PING, ASK and TRIAGE commands through an existing Switch-connected Mattermost room.
-- Uses Codex in a read-only process to answer project questions or assess the checked evidence for `INC-001`.
-- Saves a structured JSON proposal and readable Markdown report, then sends a summary to the same configured room.
-- Records the proposed fix as `AWAITING_APPROVAL`. Automatic patch execution is disabled.
-
-TRIAGE currently supports one registered incident, `INC-001`. This is a working investigation and review demo with a fixed incident registry; it is not a general-purpose incident-management service.
-
-## Why Switch matters
-
-Switch provides the connection between the existing Mattermost incident room and BugBridge's Node.js agent. The agent subscribes to that room over an authenticated WebSocket. Replies go through the Switch HTTP message endpoint with the same room binding, and the existing collaboration bridge delivers them to Mattermost.
-
-For ASK and TRIAGE, the path is **Mattermost → Switch → Node.js agent → Codex → Node.js agent → Switch → the same Mattermost room**. PING checks the message path without invoking Codex. The REST API is a separate process; a successful `/health` request does not prove that chat delivery works.
-
-The transport, room filtering, duplicate suppression, heartbeat and reconnect code are in [switch-client.mjs](switch-bridge/switch-client.mjs) and [message-handler.mjs](switch-bridge/message-handler.mjs).
+This is a local **investigation-and-review demo**, not an automatic bug-fixing system. The included incident is deliberately left unfixed.
 
 ## Demo
 
-**YouTube video: pending — the actual recording link will be added here.**
+**Loom walkthrough:** *Link to be added after the video is uploaded.*
 
-The [three-minute demo script](docs/demo-script.md) shows the intended presentation. The operator previously observed successful real PING, ASK/Codex and TRIAGE exchanges in earlier sessions. A fresh response from the latest TRIAGE session has not been verified in this review; current live acceptance remains **PENDING**.
+The demo covers the HTTP reproduction, Mattermost commands, Codex-assisted triage, saved incident report, and the disabled patch-execution boundary. See the [demo runbook](docs/demo-workflow.md) to reproduce the workflow locally.
 
-No screenshot or recording is supplied as proof of a new live run. The pending video link does not block review of the repository.
+## The problem
 
-## Architecture
+A message saying “the API is broken” rarely gives a developer enough information to act. The request, observed response, relevant code, and proposed next step may be spread across chat and terminal output.
+
+BugBridge gives that discussion a concrete record: **what happened, what should have happened, where the likely cause is, and what a reviewer should check before changing code.**
+
+## How it works
+
+1. A developer sends a command in an existing Mattermost incident room.
+2. Switch routes the message to the subscribed BugBridge agent.
+3. `PING` checks the message path. `ASK` sends a bounded project question to Codex. `TRIAGE` analyzes verified evidence and allowlisted source excerpts for `INC-001`.
+4. BugBridge validates the assessment, writes a structured report, and replies to the same room.
+5. The proposed change remains `AWAITING_APPROVAL`; no code is patched automatically.
 
 ```mermaid
-flowchart LR
-  MM["Mattermost incident room"] --> SW["Existing Switch deployment"]
-  SW --> AG["Single Node.js agent connection"]
-  AG -->|ASK or TRIAGE| CX["Read-only Codex CLI"]
-  CX --> AG
-  EV["Verified HTTP evidence and source excerpts"] -->|TRIAGE| AG
-  AG -->|TRIAGE| RP["JSON and Markdown proposal"]
-  AG --> SW
-  SW --> MM
-  RP --> HR["Human review: AWAITING_APPROVAL"]
+flowchart TD
+    MM["Mattermost incident room"] <--> SW["Switch"]
+    SW <--> AG["BugBridge Node.js agent"]
+    AG -->|ASK / TRIAGE| CX["Codex CLI - read-only"]
+    CX --> AG
+    API["Local Express API"] --> EV["Recorded HTTP evidence"]
+    EV -->|INC-001| AG
+    SRC["Checked source excerpts"] --> AG
+    AG --> RP["JSON and Markdown proposal"]
+    RP --> HR["Human review - AWAITING_APPROVAL"]
 ```
 
-The loopback Express API supplies the reproducible incident. TRIAGE consumes previously collected evidence; its chat command does not run new HTTP probes. See [architecture and trust boundaries](docs/architecture.md) for the detailed contracts.
+The REST API and chat agent run as separate processes. A healthy API does **not** mean the Switch/Mattermost connection is working. TRIAGE reads previously checked evidence; it does not perform new HTTP requests when the chat command arrives.
 
-## Supported commands
+For implementation details, see [architecture.md](docs/architecture.md), [switch-client.mjs](switch-bridge/switch-client.mjs), and [message-handler.mjs](switch-bridge/message-handler.mjs).
 
-Send these in the existing configured incident room, commonly `bugbridge-incidents`:
+## Supported chat commands
 
-| Command | Behavior |
+Send these one at a time in the configured incident room (the local demo uses `bugbridge-incidents`):
+
+| Command | Result |
 | --- | --- |
-| `PING BUGBRIDGE` | Replies with the online message, without calling Codex. |
-| `ASK BUGBRIDGE: What status should an empty task creation return?` | Sends a bounded project question to Codex and replies in the same room. The colon is required. |
-| `TRIAGE BUGBRIDGE INC-001` | Validates stored evidence and source references, requests a schema-constrained Codex assessment, saves the proposal and replies with its summary. |
+| `PING BUGBRIDGE` | Confirms the agent can receive a message and reply through Switch. Codex is not invoked. |
+| `ASK BUGBRIDGE: What is the expected status for an empty task creation request?` | Asks Codex a project question and returns the answer in the same room. |
+| `TRIAGE BUGBRIDGE INC-001` | Checks stored evidence and source references, requests a Codex assessment, and saves a reviewable proposal. |
 
-Commands are case-insensitive and may use the optional `@bug-triager` prefix. Unsupported incident IDs are rejected. ASK and TRIAGE share one analysis slot; a second request receives a busy reply while PING remains available. The Codex process has a 120-second timeout.
+Commands are case-insensitive. ASK requires the colon. ASK and TRIAGE share one analysis slot; PING can still respond while analysis is running. Codex calls have a 120-second timeout. TRIAGE currently supports **only `INC-001`**.
 
-## Real example: INC-001
+## Example incident: INC-001
 
-The controller marker is `BUG-001`; its incident record is `INC-001`.
+An intentionally preserved branch in [tasks.controller.js](src/controllers/tasks.controller.js) throws a generic error before task input validation. This changes what should be a client-side validation failure into an internal server error.
 
-| Request | Expected | Observed in the recorded evidence |
+| Request | Expected | Observed |
 | --- | --- | --- |
 | `POST /api/tasks` with `{}` | `400 VALIDATION_ERROR` | `500 INTERNAL_ERROR` |
-| `POST /api/tasks` with no body | `400 VALIDATION_ERROR` | `500 INTERNAL_ERROR` |
+| `POST /api/tasks` without a body | `400 VALIDATION_ERROR` | `500 INTERNAL_ERROR` |
 | Valid task creation | `201` | `201` |
 
-In [tasks.controller.js](src/controllers/tasks.controller.js), an intentional guard throws a generic `Error` before normal input validation. The error middleware maps that exception to a sanitized HTTP 500. The existing validator would reject those inputs with HTTP 400.
+The proposed correction is small: remove the intentional throw and the now-unused `isObject` import, then run the relevant regression and API checks. **The correction has not been applied.**
 
-The proposed change removes the empty-input throw and its unused `isObject` import, keeping normal validation and generic-error sanitization. It has **not been applied**. The proposal remains **AWAITING_APPROVAL** with human approval required.
+Evidence and examples:
 
-Start with the [sanitized incident sample](docs/examples/incident-report.sample.json) or the [reviewed triage report](reports/incidents/INC-001-triage.md). The sample is documentation, not a new execution record. The current proposal records `rootCause.analyst: CODEX_CLI`; that field alone does not prove a fresh model invocation or Mattermost delivery. Older local-review artifacts use `LOCAL_SOURCE_REVIEW`.
+- [Recorded HTTP evidence](reports/phase9-bug-evidence.md)
+- [Reviewed incident report](reports/incidents/INC-001-triage.md)
+- [Sanitized report example](docs/examples/incident-report.sample.json)
 
-## Tech stack
+A saved report's analyst field is provenance metadata, not proof that a new live Codex call or Mattermost delivery happened during a particular demonstration. Verify the report timestamp and the corresponding live session separately.
 
-| Component | Use |
+## Technology
+
+| Component | Role |
 | --- | --- |
-| Node.js 22+ | API and bridge runtime; built-in test runner, HTTP, fetch and cryptography. Recorded checks used Node.js 24.20.0. |
-| Express 5 | Local task API with in-memory storage. |
-| `ws` | Agent WebSocket client and isolated protocol-test peers. |
-| Switch and Mattermost | Existing collaboration deployment and incident room. |
-| Codex CLI | Existing authenticated installation, invoked through `execFile` in a read-only sandbox. |
-| Windows PowerShell | Documented operator workflow and native approval-storage ACL checks. |
+| Node.js 22+ | API, agent, scripts, and built-in tests; recorded local checks used Node.js 24 |
+| Express 5 | Local task API with in-memory storage |
+| `ws` | Switch agent WebSocket client |
+| Switch | Routes team messages and agent replies |
+| Mattermost | Existing incident discussion room |
+| Codex CLI | Read-only project questions and source-backed incident assessment |
+| Windows PowerShell | Documented local startup and Windows-specific security checks |
 
-Both npm packages have lockfiles. The API's only direct dependency is Express; the bridge's is `ws`.
+The API and agent have separate `package.json` files and lockfiles.
 
-## Local setup
+## Getting started
 
-### Prerequisites
+### 1. Install dependencies
 
-The API and automated fixtures can run independently of the collaboration deployment. For a live demo, you also need:
-
-- An existing working Switch/Mattermost deployment, its Mattermost collaboration bridge, incident-room mapping and registered `bug-triager` agent. These are managed outside this repository.
-- Access to the existing agent credentials and room configuration through your authorized local setup.
-- An authenticated Codex CLI compatible with the arguments in [codex-runner.mjs](switch-bridge/codex-runner.mjs). Set `CODEX_BIN` to your existing executable if needed; otherwise the runner uses the Codex application installation under `LOCALAPPDATA`.
-
-A fresh clone does not create Docker services, configure Mattermost, register an agent, provision credentials or authenticate Codex. Obtain the deployment's version-specific setup from its owner. This runtime expects Switch core at `http://127.0.0.1:8000`; the existing Mattermost address comes from your deployment.
-
-### Install dependencies
-
-Open Windows PowerShell in the BugBridge root. Install before starting the bridge; leave an already running demo undisturbed.
+Requirements: Windows PowerShell, Node.js 22+ and npm. Clone this repository, open a terminal in its root, then run:
 
 ```powershell
 node --version
 npm.cmd --version
+
 npm.cmd ci
-if ($LASTEXITCODE -ne 0) { throw 'API dependency installation failed.' }
+if ($LASTEXITCODE -ne 0) { throw 'API installation failed.' }
+
 npm.cmd --prefix switch-bridge ci
-if ($LASTEXITCODE -ne 0) { throw 'Bridge dependency installation failed.' }
+if ($LASTEXITCODE -ne 0) { throw 'Agent installation failed.' }
 ```
 
-### Start the API
+The REST API and automated tests can run without Switch, Mattermost, or Codex.
 
-If the demo API is already running, use it. Otherwise, in its own terminal:
+### 2. Start the demo API
+
+Use a dedicated PowerShell terminal in the project root:
 
 ```powershell
 $env:HOST = '127.0.0.1'
@@ -127,32 +118,11 @@ $env:PORT = '3100'
 npm.cmd start
 ```
 
-The application default is port 3000. This demo explicitly uses 3100 to avoid the existing Gateway's port. If 3100 is occupied, inspect the existing process; do not stop another service to make room. Tasks are held in memory and disappear when this API process restarts.
+Leave this terminal open. The application defaults to port 3000, but this demo uses **3100** to avoid the existing Switch Gateway's configured port. If 3100 is already in use, check whether the API is running before starting another process. Do not stop an unrelated service. Tasks are kept in memory and reset when the API restarts.
 
-### Use the existing bridge connection
+### 3. Check the HTTP behavior
 
-The existing configured bridge terminal must provide these variables without exposing their values:
-
-| Variable | Purpose |
-| --- | --- |
-| `SWITCH_AGENT_ID` | Existing agent registration. |
-| `SWITCH_AGENT_KEY` | Existing agent authentication key. |
-| `SWITCH_ROOM_ID` | Existing room subscription and reply destination. |
-
-Keep an existing bridge running. A second connection can evict it; do not run `check-connection.mjs` alongside the runtime. **Only after confirming that no bridge instance is running**, start it once in the already configured terminal:
-
-```powershell
-if (-not $env:SWITCH_AGENT_ID -or -not $env:SWITCH_AGENT_KEY -or -not $env:SWITCH_ROOM_ID) {
-    throw 'Use the existing configured terminal; do not print or replace credentials.'
-}
-npm.cmd --prefix switch-bridge start
-```
-
-Wait for `switch_connected` with `subscribed=true`. That confirms reported subscription acceptance, not end-to-end delivery. The [local runbook](docs/demo-workflow.md) covers existing-service checks and operator preflight.
-
-## Reproduce the demo
-
-With the API running on 3100, use a separate PowerShell terminal:
+In a second PowerShell terminal:
 
 ```powershell
 curl.exe -i http://127.0.0.1:3100/health
@@ -160,85 +130,108 @@ curl.exe -i -X POST http://127.0.0.1:3100/api/tasks -H 'Content-Type: applicatio
 curl.exe -i -X POST http://127.0.0.1:3100/api/tasks
 ```
 
-Expect health 200 and HTTP 500 for both empty requests. The [stored HTTP evidence](reports/phase9-bug-evidence.md) also records a valid 201 control, unchanged storage after invalid requests and health recovery.
+Expected **observations**: health `200`; both empty task requests `500`. The `500` responses reproduce the known defect. The correct behavior would be `400`. A valid `201` control and storage/health checks are covered by the recorded evidence and automated reproduction tests.
 
-In the existing Mattermost incident room, send each command separately and wait for its reply:
+### 4. Set up live Mattermost integration (optional)
 
-```text
-PING BUGBRIDGE
-ASK BUGBRIDGE: What is the expected status for an empty task creation request?
-TRIAGE BUGBRIDGE INC-001
+Live chat testing has additional prerequisites **not included in a fresh clone**:
+
+- A working local Switch deployment, its Mattermost integration, and a mapped incident room.
+- An agent registered with that Switch deployment and the credentials issued for **that** agent and room.
+- An authenticated Codex CLI compatible with the runner in [codex-runner.mjs](switch-bridge/codex-runner.mjs). If necessary, configure `CODEX_BIN` to the installed executable.
+
+Provision Switch, the Mattermost room, and agent registration using the deployment owner's **version-specific setup instructions**. BugBridge does not install Switch, register agents, issue keys, or provide the original operator's credentials. The current agent expects Switch core at `127.0.0.1:8000`.
+
+The bridge reads three environment variables:
+
+| Variable | Where it comes from |
+| --- | --- |
+| `SWITCH_AGENT_ID` | Registered Switch agent ID |
+| `SWITCH_AGENT_KEY` | Authentication key issued to that agent |
+| `SWITCH_ROOM_ID` | Configured Switch room ID mapped to Mattermost |
+
+Once your own agent and room are configured, use a **separate PowerShell terminal** in the repository root. Do this only if another BugBridge connection is **not** running:
+
+```powershell
+$env:SWITCH_AGENT_ID = Read-Host 'Switch agent ID'
+$env:SWITCH_ROOM_ID = Read-Host 'Switch room ID'
+$secureKey = Read-Host 'Switch agent key' -AsSecureString
+$env:SWITCH_AGENT_KEY = [System.Net.NetworkCredential]::new('', $secureKey).Password
+Remove-Variable secureKey
+
+npm.cmd --prefix switch-bridge start
 ```
 
-Observe the actual same-room reply. If PING fails, stop the sequence and use the [communication investigation](docs/ping-communication-investigation.md); do not open another agent connection. If analysis fails, report the failure rather than substituting an old or mocked response.
+These values are set for the current terminal session, not committed to Git. Never paste keys into issues, recordings, screenshots, source files, or `.env` files tracked by Git. A second bridge connection may evict the existing one.
 
-Successful TRIAGE writes these proposal files:
+Wait for connection/subscription logs, then send the commands from [Supported chat commands](#supported-chat-commands) in Mattermost. A connected socket alone does not prove message delivery; confirm a real reply in the same room. The [demo runbook](docs/demo-workflow.md) includes existing-service checks, report archival, and troubleshooting precautions.
+
+### 5. Inspect the triage result
+
+After a **successful live TRIAGE** response, review:
 
 ```powershell
 Get-Content -LiteralPath '.\reports\incidents\INC-001-triage.md'
 Get-Content -LiteralPath '.\reports\incidents\INC-001-triage.json'
+node scripts/check-approval-readiness.mjs
 ```
 
-Check the proposal generation time, evidence timestamp, provenance, `AWAITING_APPROVAL`, `approvalRequired: true` and `applied: false`. An old file can survive a failed request. Before a new live TRIAGE, use the runbook's archive step to preserve the existing proposal pair.
+Check the report generation time, analyst provenance, evidence references, `AWAITING_APPROVAL`, `approvalRequired: true`, and `applied: false`. A report from an earlier run may still exist if the latest request fails. Preserve the existing report pair using the [runbook](docs/demo-workflow.md) before generating a fresh one.
 
-The separate `npm.cmd run reproduce:bug` command collects fresh HTTP evidence and overwrites the canonical `reports/phase9-bug-evidence.json` and `.md`. Refreshing it changes the evidence digest and can invalidate an existing proposal. It is not required for the chat demonstration using the checked-in evidence; review and preserve the matching artifacts before refreshing them.
+Do **not** run `npm.cmd run reproduce:bug` just to test the chat command: it refreshes canonical evidence and may invalidate the current proposal's evidence digest.
 
-## Testing
+## Tests and verification
 
-Run from the project root:
+Run commands from the repository root:
 
-| Command | What it checks |
+| Command | Coverage |
 | --- | --- |
-| `npm.cmd test` | Normal task API behavior through local HTTP. |
-| `npm.cmd run test:investigation` | Reproduction, evidence handling, redaction and temporary-server cleanup. |
-| `npm.cmd run test:phase7` | Bridge, triage, approval and isolated local workflow tests. |
-| `npm.cmd run test:submission` | Submission scanner fixtures and actual Git ignore rules in disposable metadata. |
-| `npm.cmd run smoke` | Real API entrypoint, health, CRUD and recovery with the preserved 500. |
-| `npm.cmd run test:bug` | Correct HTTP-400 regression; intentionally exits with failure while INC-001 is preserved. |
-| `npm.cmd run verify:local` | Combined local verification, native ACL gates, syntax, smoke and separate regression checks. |
-| `npm.cmd run security:submission` | Heuristic current-file security scan; it does not clear Git history or excluded files. |
+| `npm.cmd test` | Normal API behavior |
+| `npm.cmd run test:investigation` | HTTP evidence handling, redaction, and cleanup |
+| `npm.cmd run test:phase7` | Bridge, triage, approval, and isolated workflow tests |
+| `npm.cmd run test:submission` | Submission scanner test fixtures |
+| `npm.cmd run smoke` | API entrypoint, CRUD, and recovery behavior |
+| `npm.cmd run security:submission` | Heuristic scan of public-file candidates; not a complete secrets audit |
+| `npm.cmd run verify:local` | Combined verification, including Windows-native security checks; see the runbook's execution-policy preflight |
+| `npm.cmd run test:bug` | **Expected to fail**: asserts the intended 400 behavior while the known bug still returns 500 |
 
-The combined verifier saves new evidence under a separate `reports/local-demo/` run directory. It does not invoke real Codex or the deployed Switch. Follow the runbook's host-policy preflight; missing native ACL checks produce `FAILED_OR_BLOCKED`, not a pass. Do not change execution policy merely to hide unavailable checks.
+`verify:local` runs local HTTP and isolated fixtures, including **mocked Switch peers and Codex subprocesses**. It does not establish a live Mattermost session or invoke the real model. Missing Windows-native ACL checks can cause a `FAILED_OR_BLOCKED` result; do not treat that as a passing run.
 
-Recorded results are from different runs:
+Recorded verification results (different runs, **not** one current combined result):
 
-| Recorded run | Passed | Failed | Skipped | Meaning |
+| Run | Passed | Unexpected failures | Skipped | Notes |
 | --- | ---: | ---: | ---: | --- |
-| Historical Phase 14, 2026-11-06 07:47 UTC | 300 | 0 | 1 | Historical successful normal-suite verification. |
-| Later communication investigation | 278 | 22 | 5 | Broad verification remained blocked; native ACL checks were unavailable and a sampled enrollment failure confirmed PowerShell script restrictions. |
-| Phase 16A publication security tests | 11 | 0 | 0 | Security-only checks; not a full-suite rerun. |
+| Phase 14 local verification, 6 Nov 2026 | 300 | 0 | 1 | Earlier successful normal test run |
+| Later environment-restricted verification | 278 | 22 | 5 | Blocked by host restrictions; not a full pass |
+| Publication security tests | 11 | 0 | 0 | Security-specific tests only |
 
-The intentional HTTP-400 regression is separate from these normal-suite totals: its recorded failure confirms the preserved 500 response. [Dated verification records](docs/submission-checklist.md#phase-14-verification-results) and the [E2E verification notes](docs/end-to-end-verification.md) explain the boundaries.
+The intentionally failing HTTP-400 regression is separate from the normal-suite totals. For test scope, known limitations, and dated evidence, see [end-to-end verification](docs/end-to-end-verification.md).
 
-Automated workflow tests use real local HTTP, file validation and cryptography, with **mocked Switch peers and Codex subprocesses**. They do not prove live Mattermost delivery or a real model response. Historical operator-observed live exchanges are described in the Demo section; fresh live acceptance remains pending.
+## Security and current limitations
 
-## Security boundaries and limitations
+- **No automatic fixes.** Patch execution is disabled, and the intentional API bug remains in place.
+- **No live approval claim.** Human enrollment is incomplete and deployed sender authentication is unverified. Approval-related automated tests use synthetic identities and keys.
+- **Local API only.** The Express demo has no authentication, rate limiting, or persistent storage. Keep it bound to `127.0.0.1` and use synthetic data.
+- **Read-only is not private by default.** Codex may process inspected content through its configured service. ASK has a broader inspection surface than TRIAGE; use a clean demo workspace.
+- **Limited incident scope.** Live TRIAGE currently supports `INC-001`, not arbitrary issues.
+- **Credentials are not distributed.** Each operator must provision an authorized Switch agent and room. Local key material, private approval data, and unreviewed captures must stay out of the repository.
 
-- **Automatic patch execution is disabled.** The execution entry point refuses even after a simulated approval. `INC-001` remains intentionally unfixed.
-- **Human enrollment is incomplete and live sender authentication is unverified.** Approval checks require trusted identity and authorization; display names and room membership cannot grant approval. Enrollment or activation is not part of this demo.
-- **The API is a local demo, not a production service.** It has no authentication, rate limiting or durable storage. Keep it on loopback with synthetic tasks.
-- **Read-only execution does not guarantee confidentiality.** ASK can inspect the project more broadly than TRIAGE. Use synthetic questions and a clean demo workspace; model input may leave the machine through the existing Codex service.
-- **Publication needs its own review.** Keep credentials, signing keys, DPAPI exports, private approval storage, account IDs, raw incident data and recordings out of Git. Existing ignore rules must remain intact; a pattern scan cannot prove their contents or history are safe.
+For the underlying trust boundaries and checks, read [security-review.md](docs/security-review.md).
 
-See the [security review](docs/security-review.md) and [publication checklist](docs/submission-checklist.md) for the detailed findings and release checks.
-
-## Project structure
+## Repository layout
 
 ```text
-src/                    Express task API and intentional BUG-001 branch
-tests/                  API, evidence, enrollment and submission tests
-switch-bridge/          Agent runtime, Switch transport, Codex runner and triage
-  test/                 Bridge protocol, command and approval tests
-scripts/                Verification, reproduction and operator helpers
-fixtures/               Fixed synthetic bug description
-reports/                Reviewed HTTP evidence, proposals and dated verification
-  private/              Ignored private reports and local audit artifacts
-docs/                   Architecture, demo runbook and historical reviews
-  examples/             Sanitized documentation sample
+src/                    Express demo API and the intentional bug
+tests/                  API, investigation, setup, and submission tests
+switch-bridge/          Switch client, agent runtime, Codex runner, and triage
+scripts/                Local verification and reproduction utilities
+fixtures/               Synthetic incident fixture
+reports/                Reviewed evidence and incident reports
+docs/                   Architecture, runbook, verification, and examples
 ```
 
-The dependency trees are installed locally and excluded from Git. Private report and approval storage must stay excluded; publish only individually reviewed artifacts.
+Ignored local material, including `reports/private/`, keys, and raw captures, is **not** part of the public repository.
 
 ## Hackathon
 
-Built for **WeMakeDevs Flip the Switch**, track **Best Business Workflow**. The demonstrated workflow is a reproducible incident moving from a Mattermost request, through Switch and Codex analysis, to an evidence-backed proposal awaiting human review.
+Built for **WeMakeDevs Flip the Switch**, **Best Business Workflow** track. BugBridge demonstrates a documented handoff from a team-chat incident to reproducible evidence, source-supported investigation, and a proposed change awaiting human review.
