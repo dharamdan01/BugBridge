@@ -2,13 +2,21 @@
 
 Date: 2026-11-06. Scope: BugBridge source, scripts, tests, lockfiles and release reports/docs; local demo only. No Switch source/deployment, approval policy, application behavior or credentials changed. No enrollment, real key access/generation, push or deployment performed. Findings are bounded observations, not a claim of complete security.
 
-## Phase 14 publication update
+## Current publication status
+
+The repository is already public. The latest documentation/history audit reviewed both available local commits, all 121 stored blobs and the 122 tracked files. No actual embedded credential, private-key block, DPAPI export or private account record was detected in that scope. This is a scoped finding, not a guarantee about arbitrary secret formats, remote caches or other clones.
+
+Both commits contain non-no-reply authorship email metadata. Whether that address is intentionally public remains a separate operator decision; its value is not reproduced here. If it was intended private, a later commit or future Git configuration change will not erase the existing exposure. No author metadata, history or credentials were changed by the audit.
+
+Human enrollment remains incomplete, deployed sender authentication unverified and patch execution disabled. Use the [verification record](end-to-end-verification.md#recorded-verification-runs) for dated passes, blocked runs and mocked-test boundaries. The older no-Git and pre-publication statements below describe their historical audit context, not the current repository.
+
+## Historical Phase 14 publication update
 
 The four previously flagged historical documents were reviewed and sixteen personal checkout paths replaced with operator prompts/generic source references. Their historical findings and canonical incident reports were preserved. The current heuristic scan now has zero personal-reference locations as well as zero selected secret-pattern findings; this is not a full privacy guarantee. JSON report review found no values under the checked sender/subject/room/agent/account identity keys. One older BOM-bearing JSON report was parsed with BOM normalization only for review; its original bytes were preserved.
 
 DPAPI/PowerShell credential exports, credential JSON, database files/exports and private reports are now excluded by both ignore rules and the scan reader. Two additional tests verify actual Git exclusions in disposable metadata and that private exports are not opened. No real production repository/index was created. Git history/index and dependency advisory clearance remain unavailable; no secret revocation, history rewrite or license choice was made. Current publication gates and fresh Phase 14 results are in [the submission checklist](submission-checklist.md). The table below records Phase 12 findings and their original disposition, not a claim those personal paths still remain.
 
-## Findings and disposition
+## Historical findings and disposition
 
 | Category | Severity | Affected location | Evidence, treatment and recommended action |
 | --- | --- | --- | --- |

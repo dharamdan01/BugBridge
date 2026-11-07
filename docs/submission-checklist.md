@@ -2,7 +2,13 @@
 
 Project: BugBridge. Track: Best Business Workflow, WeMakeDevs Flip the Switch. Local demonstration only; deployment is not required. **Publication/push is not authorized by this preparation.**
 
-## Phase 16A review status
+## Current use
+
+The repository has since been published. Keep this document as a maintainer checklist and dated preparation record; the Phase 16A and Phase 14 observations below retain their original scope. Do not initialize a new repository over the existing checkout. Future changes need their own diff/index review, and any earlier hash-bound local staging plan must be refreshed before reuse. The Git authorship email privacy decision remains separate; this cleanup does not alter metadata or history.
+
+For the concise test summary, use the [verification record](end-to-end-verification.md#recorded-verification-runs). Keep historical passing results distinct from later blocked checks and real live observations distinct from mocked E2E tests.
+
+## Historical Phase 16A review status
 
 - This phase corrects the seven files selected by the publication audit. It runs publication security tests only: **11 passed, 0 failed, 0 skipped**. It does not rerun the full API/bridge/native ACL verification or change host execution policy.
 - Historical Phase 14 verification on 2026-11-06 at 07:47 UTC recorded **300 passed, 0 failed, 1 skipped**. The later [communication investigation](ping-communication-investigation.md#actual-local-verification) recorded **278 passed, 22 failed, 5 skipped** across its normal suites and was not a full PASS. Its native ACL checks were unavailable; a sampled enrollment failure confirmed PowerShell script restrictions. Keep the separate expected HTTP-400 regression failure outside normal-suite totals.
@@ -30,18 +36,16 @@ Project: BugBridge. Track: Best Business Workflow, WeMakeDevs Flip the Switch. L
 | Deep Authorization Audit | Keep metadata approval disabled; no identity inference from names/client_type/room membership. Verify no approval/executor/config activation changes in the staged diff. Enrollment/Phase 11B are outside this submission. |
 | Attacker-Perspective Review | Retain traversal/link, no-shell, prompt-injection/schema, self/bot/unverified sender, room, expiry/replay/concurrency and disabled-execution regressions. ASK is a broader read-only surface; a clean demo workspace is required. |
 
-## Exact operator Git procedure — no push
+## Existing-repository review — no Git writes
 
-Run from the intended BugBridge checkout. These commands are for the human; none were executed against a production repository by the audit agent. For a brand-new repository, initialize only after confirming this is the intended project directory. Do not initialize inside an unrelated parent repository.
+Run from the intended existing BugBridge checkout. These are read-only review commands; stop on an ownership or repository error rather than replacing metadata or changing trust.
 
 ```powershell
 if (-not (Test-Path -LiteralPath '.\package.json') -or -not (Test-Path -LiteralPath '.\switch-bridge')) {
     throw 'STOP: open the BugBridge project root.'
 }
 git rev-parse --show-toplevel
-# If it reports NOT A REPOSITORY and this is intentionally a new repository:
-# git init -b main
-# Do not run init to resolve an ownership error or to replace an existing repo.
+if ($LASTEXITCODE -ne 0) { throw 'STOP: existing repository/owner review required.' }
 
 git status --short
 if ($LASTEXITCODE -ne 0) { throw 'STOP: actual Git repository/owner review required.' }
@@ -53,23 +57,19 @@ git log --all --format='%h %ad' --date=iso-strict
 
 A shallow/unavailable history is not cleared. An empty new repository has no local history to inspect; it does not attest to earlier external copies. Use a maintained, owner-approved secret scanner with redacted output over the actual index/full history. No tool-specific flags are invented and no scanner is installed automatically. Findings require owner-led revocation/rotation and history remediation decisions; never rewrite history or rotate credentials automatically.
 
-Check ignore rules on synthetic paths after manual initialization (no real keys/files are created). The focused test also checks these rules in disposable metadata without initializing this project:
+Check ignore rules on synthetic paths in the existing repository (no real keys/files are created). The focused test also checks these rules in disposable metadata:
 
 ```powershell
 git check-ignore --no-index -- .env .env.local .bugbridge-private/approval-config.json keys/operator.p8 credential.dpapi credential.clixml nested/.codex/auth.toml nested/.aws/credentials nested/.ssh/id_ed25519 recording.mp4 recording.wav database.bak reports/raw-incident.json reports/private/publication-audit/inventory.json
 ```
 
-After the owner manually initializes the intended new repository, review its index/history and use only the validated exact file plan. Do not stage directories or use force-add, a whole-folder add, or a whole-folder ZIP. Any file change invalidates its recorded hash; re-audit before staging.
+For a later owner-controlled update, review the actual index/history and changed files. Do not stage directories or use force-add, a whole-folder add, or a whole-folder ZIP. The earlier local-only staging script is not distributed with public clones and its old file hashes no longer describe subsequent documentation edits; do not reuse it unchanged.
 
 ```powershell
 npm.cmd run security:submission
 if ($LASTEXITCODE -ne 0) { throw 'STOP: submission scan needs review.' }
-# Inspect this local-only generated script in a trusted editor first.
-# It must contain only the audited file list, preflight checks and literal adds.
-# Invoke it manually only after its hash/file-list validation and owner review:
-# & .\reports\private\publication-audit\git-add-safe.ps1
-# Do not bypass script-execution policy to run it. If blocked, use its exact
-# reviewed file-level commands manually; never replace them with directory adds.
+# Review changes before any separate manual staging step.
+# Re-audit changed files and use explicit paths; do not run an old private helper.
 git diff --cached --check
 if ($LASTEXITCODE -ne 0) { throw 'STOP: staged whitespace/conflict check failed.' }
 git diff --cached --stat

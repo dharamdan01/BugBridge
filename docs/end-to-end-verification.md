@@ -1,8 +1,18 @@
-# Phase 12/13: end-to-end verification
+# Verification record
 
-Date: 2026-11-06. Supported result: a reproducible local **investigation and human review** workflow. Automatic fixing, verified live sender authorization and enrolled production human approval are not demonstrated.
+Supported workflow: reproducible local **investigation and human review**. Automatic fixing, verified live sender authorization and completed human enrollment are not demonstrated. The records below retain their original dates and outcomes.
 
-Historical Phase 14 added publication/privacy preparation, two exclusion tests and a verified demo API override on port 3100. Its 2026-11-06 07:47 UTC run recorded 300 passed, 0 failed, 1 skipped. The later [communication investigation](ping-communication-investigation.md#actual-local-verification) recorded 278 passed, 22 failed, 5 skipped across its normal suites; native ACL checks were unavailable and a sampled enrollment failure confirmed script restrictions. It was not a full PASS. Phase 16A ran only publication security tests: 11 passed, 0 failed, 0 skipped. See [the dated submission record](submission-checklist.md#phase-14-verification-results). The Phase 12/13 counts/artifacts below remain historical and are not rewritten to hide earlier failures or privacy-review findings.
+## Recorded verification runs
+
+| Record | Passed | Failed | Skipped | Scope |
+| --- | ---: | ---: | ---: | --- |
+| [Phase 14, 2026-11-06 07:47 UTC](../reports/local-demo/2026-11-06T07-47-08-335Z-1ffe466f-f929-430b-ac46-192acf28ba29/verification.json) | 300 | 0 | 1 | Historical successful local verification. |
+| [Later run, 2026-11-06 18:27 UTC](../reports/local-demo/2026-11-06T18-27-49-749Z-21555f9f-481f-4a9d-97d7-8d1750542a22/verification.json) | 300 | 0 | 1 | Historical successful local verification. |
+| [Blocked verifier, 2026-11-06 19:19 UTC](../reports/local-demo/2026-11-06T19-19-34-218Z-84d7ecdf-1c78-4814-b2f0-64ff104a0a5e/verification.json) | 266 | 0 | 5 | Stopped at unavailable native ACL checks; not a full PASS. |
+| [Communication-investigation aggregate](ping-communication-investigation.md#actual-local-verification) | 278 | 22 | 5 | Verifier plus separate enrollment/submission follow-ups; not one verifier JSON or a full PASS. |
+| Phase 16A publication security tests | 11 | 0 | 0 | Security-only checks; no full-suite rerun. |
+
+A sampled enrollment failure in the later investigation confirmed PowerShell script restrictions. The separate intentional HTTP-400 regression failed for the preserved 500 behavior and is excluded from normal-suite totals. The detailed [Phase 14 record](submission-checklist.md#phase-14-verification-results) and the Phase 12/13 results below remain historical. Automated verification did not invoke real Codex or the deployed Switch; it does not establish live delivery.
 
 ## Incident and evidence history
 
@@ -21,7 +31,7 @@ Historical evidence: `reports/phase9-bug-evidence.json` and `.md`; historical Ph
 | Existing bridge/triage suites | Filtering, PING/ASK/TRIAGE, authenticated synthetic protocol, reconnect/cursors/heartbeat, process sandbox args/EOF/timeouts, error redaction and malformed output rejection | Deployed image equivalence or account authentication |
 | Existing approval suites | Real Ed25519 signatures using synthetic keys, expiry, replay, room/identity binding, self/bot rejection, concurrent/restart state, source/evidence integrity | Production key custody, real enrollment or live approval |
 | Windows setup suites | Native owner-only ACL prepare/verify, unsafe-parent/inherited/non-owner refusal, synthetic key format/fingerprint/signature tests | Production storage revalidation under a different execution SID |
-| Submission scan | Nine fixture tests plus real current-file heuristic scan; no matched secret content printed | Git history/index, excluded files, arbitrary secret formats or complete security |
+| Submission scan | Current publication coverage has 11 scanner/ignore tests plus the current-file heuristic scan; no matched secret content printed | Git history/index, excluded files, arbitrary secret formats or complete security |
 
 The combined test creates only a loopback mock Switch fixture, never another connection to the deployed server. Any temporary synthetic proposal carrying CODEX_CLI provenance exists only inside that mocked test fixture and is deleted; it is not a real model execution or submission evidence. The actual verification report explicitly records realCodexInvokedThisRun=false and liveMattermostVerifiedThisRun=false.
 

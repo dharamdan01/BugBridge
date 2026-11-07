@@ -55,7 +55,7 @@ Absent enrollment must produce APPROVAL_DENIED. Valid configuration with disable
 node scripts/check-approval-readiness.mjs
 ```
 
-Confirm proposal PASS; enrollment ABSENT; human PENDING; Switch UNVERIFIED; patchExecutionEnabled false; executionEntryPointRefused true. Live command/proposal must have a fresh timestamp and actual CODEX_CLI provenance before it is called live AI output. Review evidence timestamp separately: TRIAGE consumes the stored evidence and does not run a new HTTP probe itself.
+Inspect the actual readiness result rather than assuming proposal PASS or enrollment ABSENT. Failed or unavailable checks remain blocked. Human enrollment is incomplete and deployed sender authentication remains unverified; confirm patchExecutionEnabled false and executionEntryPointRefused true. Associate any new live claim with the observed same-room reply and matching proposal timestamp/provenance. TRIAGE consumes stored evidence, so inspect its evidence timestamp separately.
 
 ## Submission assets to add manually
 

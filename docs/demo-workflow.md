@@ -1,8 +1,8 @@
-# Phase 13: reproducible local demo
+# Local demo runbook
 
 BugBridge — WeMakeDevs Flip the Switch, Best Business Workflow. Deployment is not required. Show the business handoff from incident evidence to a structured, reviewable proposal and a protected execution boundary. Do not present automatic fixing or enrolled live approval as implemented demo behavior.
 
-Phase 16A status: historical Phase 14 verification recorded 300 passed, 0 failed, 1 skipped; the later communication investigation recorded 278 passed, 22 failed, 5 skipped and was blocked by unavailable native checks and script-restricted enrollment cases. This publication phase ran only security tests: 11 passed, 0 failed, 0 skipped. See the [dated results](submission-checklist.md#phase-14-verification-results). The operator previously observed real Mattermost PING, ASK/Codex and TRIAGE successes in earlier sessions. A fresh latest-session TRIAGE response was not verified here; current live acceptance remains PENDING. Human enrollment remains incomplete and automatic patch execution remains disabled.
+The operator previously observed real Mattermost PING, ASK/Codex and TRIAGE successes. This guide does not establish a fresh live result; verify the actual same-room response during the demonstration. The [verification record](end-to-end-verification.md#recorded-verification-runs) distinguishes historical passes, later blocked checks and security-only tests. Human enrollment remains incomplete and automatic patch execution remains disabled.
 
 ## Prerequisites and startup
 
