@@ -8,7 +8,7 @@ This is a local **investigation-and-review demo**, not an automatic bug-fixing s
 
 ## Demo
 
-**Loom walkthrough:** *Link to be added after the video is uploaded.*
+[Watch the BugBridge hackathon demo](https://youtu.be/TluzvBd5sqE?si=Ni4mOHRu04yWJzHy)
 
 The demo covers the HTTP reproduction, Mattermost commands, Codex-assisted triage, saved incident report, and the disabled patch-execution boundary. See the [demo runbook](docs/demo-workflow.md) to reproduce the workflow locally.
 
